@@ -3413,7 +3413,8 @@ public abstract class AbstractRomHandler implements RomHandler {
 
     @Override
     public void randomizeMovesLearnt(Settings settings) {
-        boolean typeThemed = settings.getMovesetsMod() == Settings.MovesetsMod.RANDOM_PREFER_SAME_TYPE;
+        boolean randomizeGameBreaking = settings.getMovesetsMod() == Settings.MovesetsMod.GAME_BREAKING_ONLY;
+        boolean typeThemed = settings.getMovesetsMod() == Settings.MovesetsMod.RANDOM_PREFER_SAME_TYPE | randomizeGameBreaking;
         boolean noBroken = settings.isBlockBrokenMovesetMoves();
         boolean forceStartingMoves = supportsFourStartingMoves() && settings.isStartWithGuaranteedMoves();
         int forceStartingMoveCount = settings.getGuaranteedMoveCount();
@@ -3430,6 +3431,7 @@ public abstract class AbstractRomHandler implements RomHandler {
         Map<Type, List<Move>> validTypeMoves = new HashMap<>();
         Map<Type, List<Move>> validTypeDamagingMoves = new HashMap<>();
         createSetsOfMoves(noBroken, validMoves, validDamagingMoves, validTypeMoves, validTypeDamagingMoves);
+        Set<Integer> allBanned = new HashSet<Integer>(this.getGameBreakingMoves());
 
         for (Integer pkmnNum : movesets.keySet()) {
             List<Integer> learnt = new ArrayList<>();
@@ -3495,87 +3497,98 @@ public abstract class AbstractRomHandler implements RomHandler {
             for (int i = 0; i < moves.size(); i++) {
                 // should this move be forced damaging?
                 boolean attemptDamaging = i == lv1index || goodDamagingLeft > 0;
+                boolean skipRandomizing = false;
 
-                // type themed?
-                Type typeOfMove = null;
-                if (typeThemed) {
-                    double picked = random.nextDouble();
-                    if ((pkmn.primaryType == Type.NORMAL && pkmn.secondaryType != null) ||
-                            (pkmn.secondaryType == Type.NORMAL)) {
-
-                        Type otherType = pkmn.primaryType == Type.NORMAL ? pkmn.secondaryType : pkmn.primaryType;
-
-                        // Normal/OTHER: 10% normal, 30% other, 60% random
-                        if (picked < 0.1) {
-                            typeOfMove = Type.NORMAL;
-                        } else if (picked < 0.4) {
-                            typeOfMove = otherType;
-                        }
-                        // else random
-                    } else if (pkmn.secondaryType != null) {
-                        // Primary/Secondary: 20% primary, 20% secondary, 60% random
-                        if (picked < 0.2) {
-                            typeOfMove = pkmn.primaryType;
-                        } else if (picked < 0.4) {
-                            typeOfMove = pkmn.secondaryType;
-                        }
-                        // else random
-                    } else {
-                        // Primary/None: 40% primary, 60% random
-                        if (picked < 0.4) {
-                            typeOfMove = pkmn.primaryType;
-                        }
-                        // else random
+                if (randomizeGameBreaking) {
+                    if (!allBanned.contains(moves.get(i).move)) {
+                        skipRandomizing = true;
+                        learnt.add(moves.get(i).move);
                     }
                 }
 
-                // select a list to pick a move from that has at least one free
-                List<Move> pickList = validMoves;
-                if (attemptDamaging) {
-                    if (typeOfMove != null) {
-                        if (validTypeDamagingMoves.containsKey(typeOfMove)
-                                && checkForUnusedMove(validTypeDamagingMoves.get(typeOfMove), learnt)) {
-                            pickList = validTypeDamagingMoves.get(typeOfMove);
+                if (!skipRandomizing) {
+                    // type themed?
+                    Type typeOfMove = null;
+                    if (typeThemed) {
+                        double picked = random.nextDouble();
+                        if ((pkmn.primaryType == Type.NORMAL && pkmn.secondaryType != null) ||
+                                (pkmn.secondaryType == Type.NORMAL)) {
+
+                            Type otherType = pkmn.primaryType == Type.NORMAL ? pkmn.secondaryType : pkmn.primaryType;
+
+                            // Normal/OTHER: 10% normal, 30% other, 60% random
+                            if (picked < 0.1) {
+                                typeOfMove = Type.NORMAL;
+                            } else if (picked < 0.4) {
+                                typeOfMove = otherType;
+                            }
+                            // else random
+                        } else if (pkmn.secondaryType != null) {
+                            // Primary/Secondary: 20% primary, 20% secondary, 60% random
+                            if (picked < 0.2) {
+                                typeOfMove = pkmn.primaryType;
+                            } else if (picked < 0.4) {
+                                typeOfMove = pkmn.secondaryType;
+                            }
+                            // else random
+                        } else {
+                            // Primary/None: 40% primary, 60% random
+                            if (picked < 0.4) {
+                                typeOfMove = pkmn.primaryType;
+                            }
+                            // else random
+                        }
+                    }
+
+                    // select a list to pick a move from that has at least one free
+                    List<Move> pickList = validMoves;
+                    if (attemptDamaging) {
+                        if (typeOfMove != null) {
+                            if (validTypeDamagingMoves.containsKey(typeOfMove)
+                                    && checkForUnusedMove(validTypeDamagingMoves.get(typeOfMove), learnt)) {
+                                pickList = validTypeDamagingMoves.get(typeOfMove);
+                            } else if (checkForUnusedMove(validDamagingMoves, learnt)) {
+                                pickList = validDamagingMoves;
+                            }
                         } else if (checkForUnusedMove(validDamagingMoves, learnt)) {
                             pickList = validDamagingMoves;
                         }
-                    } else if (checkForUnusedMove(validDamagingMoves, learnt)) {
-                        pickList = validDamagingMoves;
+                        MoveCategory forcedCategory = random.nextDouble() < atkSpAtkRatio ? MoveCategory.PHYSICAL : MoveCategory.SPECIAL;
+                        List<Move> filteredList = pickList.stream().filter(mv -> mv.category == forcedCategory).collect(Collectors.toList());
+                        if (!filteredList.isEmpty() && checkForUnusedMove(filteredList, learnt)) {
+                            pickList = filteredList;
+                        }
+                    } else if (typeOfMove != null) {
+                        if (validTypeMoves.containsKey(typeOfMove)
+                                && checkForUnusedMove(validTypeMoves.get(typeOfMove), learnt)) {
+                            pickList = validTypeMoves.get(typeOfMove);
+                        }
                     }
-                    MoveCategory forcedCategory = random.nextDouble() < atkSpAtkRatio ? MoveCategory.PHYSICAL : MoveCategory.SPECIAL;
-                    List<Move> filteredList = pickList.stream().filter(mv -> mv.category == forcedCategory).collect(Collectors.toList());
-                    if (!filteredList.isEmpty() && checkForUnusedMove(filteredList, learnt)) {
-                        pickList = filteredList;
+
+                    // now pick a move until we get a valid one
+                    Move mv = pickList.get(random.nextInt(pickList.size()));
+                    while (learnt.contains(mv.number)) {
+                        mv = pickList.get(random.nextInt(pickList.size()));
                     }
-                } else if (typeOfMove != null) {
-                    if (validTypeMoves.containsKey(typeOfMove)
-                            && checkForUnusedMove(validTypeMoves.get(typeOfMove), learnt)) {
-                        pickList = validTypeMoves.get(typeOfMove);
+
+                    if (i == lv1index) {
+                        lv1AttackingMove = mv.number;
+                    } else {
+                        goodDamagingLeft--;
                     }
+                    learnt.add(mv.number);
                 }
-
-                // now pick a move until we get a valid one
-                Move mv = pickList.get(random.nextInt(pickList.size()));
-                while (learnt.contains(mv.number)) {
-                    mv = pickList.get(random.nextInt(pickList.size()));
-                }
-
-                if (i == lv1index) {
-                    lv1AttackingMove = mv.number;
-                } else {
-                    goodDamagingLeft--;
-                }
-                learnt.add(mv.number);
-
             }
 
-            Collections.shuffle(learnt, random);
-            if (learnt.get(lv1index) != lv1AttackingMove) {
-                for (int i = 0; i < learnt.size(); i++) {
-                    if (learnt.get(i) == lv1AttackingMove) {
-                        learnt.set(i, learnt.get(lv1index));
-                        learnt.set(lv1index, lv1AttackingMove);
-                        break;
+            if (!randomizeGameBreaking) {
+                Collections.shuffle(learnt, random);
+                if (learnt.get(lv1index) != lv1AttackingMove) {
+                    for (int i = 0; i < learnt.size(); i++) {
+                        if (learnt.get(i) == lv1AttackingMove) {
+                            learnt.set(i, learnt.get(lv1index));
+                            learnt.set(lv1index, lv1AttackingMove);
+                            break;
+                        }
                     }
                 }
             }
@@ -3591,7 +3604,6 @@ public abstract class AbstractRomHandler implements RomHandler {
         }
         // Done, save
         this.setMovesLearnt(movesets);
-
     }
 
     @Override

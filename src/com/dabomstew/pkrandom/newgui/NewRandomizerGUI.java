@@ -123,6 +123,7 @@ public class NewRandomizerGUI {
     private JRadioButton pmsRandomPreferringSameTypeRadioButton;
     private JRadioButton pmsRandomCompletelyRadioButton;
     private JRadioButton pmsMetronomeOnlyModeRadioButton;
+    private JRadioButton pmsRandomizeGameBreakingOnlyRadioButton;
     private JCheckBox pmsGuaranteedLevel1MovesCheckBox;
     private JCheckBox pmsReorderDamagingMovesCheckBox;
     private JCheckBox pmsNoGameBreakingMovesCheckBox;
@@ -439,6 +440,7 @@ public class NewRandomizerGUI {
         pmsRandomPreferringSameTypeRadioButton.addActionListener(e -> enableOrDisableSubControls());
         pmsRandomCompletelyRadioButton.addActionListener(e -> enableOrDisableSubControls());
         pmsMetronomeOnlyModeRadioButton.addActionListener(e -> enableOrDisableSubControls());
+        pmsRandomizeGameBreakingOnlyRadioButton.addActionListener(e -> enableOrDisableSubControls());
         pmsGuaranteedLevel1MovesCheckBox.addActionListener(e -> enableOrDisableSubControls());
         pmsForceGoodDamagingCheckBox.addActionListener(e -> enableOrDisableSubControls());
         tpForceFullyEvolvedAtCheckBox.addActionListener(e -> enableOrDisableSubControls());
@@ -1530,6 +1532,7 @@ public class NewRandomizerGUI {
         pmsRandomPreferringSameTypeRadioButton.setSelected(settings.getMovesetsMod() == Settings.MovesetsMod.RANDOM_PREFER_SAME_TYPE);
         pmsUnchangedRadioButton.setSelected(settings.getMovesetsMod() == Settings.MovesetsMod.UNCHANGED);
         pmsMetronomeOnlyModeRadioButton.setSelected(settings.getMovesetsMod() == Settings.MovesetsMod.METRONOME_ONLY);
+        pmsRandomizeGameBreakingOnlyRadioButton.setSelected(settings.getMovesetsMod() == Settings.MovesetsMod.GAME_BREAKING_ONLY);
         pmsGuaranteedLevel1MovesCheckBox.setSelected(settings.isStartWithGuaranteedMoves());
         pmsGuaranteedLevel1MovesSlider.setValue(settings.getGuaranteedMoveCount());
         pmsReorderDamagingMovesCheckBox.setSelected(settings.isReorderDamagingMoves());
@@ -1766,7 +1769,8 @@ public class NewRandomizerGUI {
         settings.setRandomizeMoveTypes(mdRandomizeMoveTypesCheckBox.isSelected());
 
         settings.setMovesetsMod(pmsUnchangedRadioButton.isSelected(), pmsRandomPreferringSameTypeRadioButton.isSelected(),
-                pmsRandomCompletelyRadioButton.isSelected(), pmsMetronomeOnlyModeRadioButton.isSelected());
+                pmsRandomCompletelyRadioButton.isSelected(), pmsMetronomeOnlyModeRadioButton.isSelected(),
+                pmsRandomizeGameBreakingOnlyRadioButton.isSelected());
         settings.setStartWithGuaranteedMoves(pmsGuaranteedLevel1MovesCheckBox.isSelected() && pmsGuaranteedLevel1MovesCheckBox.isVisible());
         settings.setGuaranteedMoveCount(pmsGuaranteedLevel1MovesSlider.getValue());
         settings.setReorderDamagingMoves(pmsReorderDamagingMovesCheckBox.isSelected());
@@ -2267,6 +2271,9 @@ public class NewRandomizerGUI {
         pmsMetronomeOnlyModeRadioButton.setVisible(true);
         pmsMetronomeOnlyModeRadioButton.setEnabled(false);
         pmsMetronomeOnlyModeRadioButton.setSelected(false);
+        pmsRandomizeGameBreakingOnlyRadioButton.setVisible(true);
+        pmsRandomizeGameBreakingOnlyRadioButton.setEnabled(false);
+        pmsRandomizeGameBreakingOnlyRadioButton.setSelected(false);
         pmsGuaranteedLevel1MovesCheckBox.setVisible(true);
         pmsGuaranteedLevel1MovesCheckBox.setEnabled(false);
         pmsGuaranteedLevel1MovesCheckBox.setSelected(false);
@@ -2827,6 +2834,7 @@ public class NewRandomizerGUI {
             pmsRandomPreferringSameTypeRadioButton.setEnabled(true);
             pmsRandomCompletelyRadioButton.setEnabled(true);
             pmsMetronomeOnlyModeRadioButton.setEnabled(true);
+            pmsRandomizeGameBreakingOnlyRadioButton.setEnabled(true);
 
             pmsGuaranteedLevel1MovesCheckBox.setVisible(romHandler.supportsFourStartingMoves());
             pmsGuaranteedLevel1MovesSlider.setVisible(romHandler.supportsFourStartingMoves());
@@ -3305,6 +3313,19 @@ public class NewRandomizerGUI {
             pmsReorderDamagingMovesCheckBox.setEnabled(true);
             pmsNoGameBreakingMovesCheckBox.setEnabled(true);
             pmsEvolutionMovesCheckBox.setEnabled(true);
+        }
+
+        if (pmsRandomizeGameBreakingOnlyRadioButton.isSelected()) {
+            pmsGuaranteedLevel1MovesCheckBox.setEnabled(false);
+            pmsGuaranteedLevel1MovesCheckBox.setSelected(false);
+            pmsForceGoodDamagingCheckBox.setEnabled(false);
+            pmsForceGoodDamagingCheckBox.setSelected(false);
+            pmsReorderDamagingMovesCheckBox.setEnabled(false);
+            pmsReorderDamagingMovesCheckBox.setSelected(false);
+            pmsNoGameBreakingMovesCheckBox.setEnabled(false);
+            pmsNoGameBreakingMovesCheckBox.setSelected(true);
+            pmsEvolutionMovesCheckBox.setEnabled(false);
+            pmsEvolutionMovesCheckBox.setSelected(false);
         }
 
         if (pmsGuaranteedLevel1MovesCheckBox.isSelected()) {

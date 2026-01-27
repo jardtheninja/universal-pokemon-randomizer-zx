@@ -1436,6 +1436,17 @@
                       <toolTipText resource-bundle="com/dabomstew/pkrandom/newgui/Bundle" key="GUI.pmsMetronomeOnlyModeRadioButton.toolTipText"/>
                     </properties>
                   </component>
+				  <component id="bc811" class="javax.swing.JRadioButton" binding="pmsRandomizeGameBreakingOnlyRadioButton">
+                    <constraints>
+                      <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                      <gridbag weightx="0.0" weighty="0.0"/>
+                    </constraints>
+                    <properties>
+                      <enabled value="false"/>
+                      <text resource-bundle="com/dabomstew/pkrandom/newgui/Bundle" key="GUI.pmsRandomizeGameBreakingOnlyRadioButton.text"/>
+                      <toolTipText resource-bundle="com/dabomstew/pkrandom/newgui/Bundle" key="GUI.pmsRandomizeGameBreakingOnlyRadioButton.toolTipText"/>
+                    </properties>
+                  </component>
                   <component id="d836e" class="javax.swing.JCheckBox" binding="pmsGuaranteedLevel1MovesCheckBox">
                     <constraints>
                       <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
@@ -3853,6 +3864,7 @@
       <member id="556eb"/>
       <member id="c1370"/>
       <member id="bc810"/>
+	  <member id="bc811"/>
     </group>
     <group name="wildPokemonButtonGroup">
       <member id="34243"/>
