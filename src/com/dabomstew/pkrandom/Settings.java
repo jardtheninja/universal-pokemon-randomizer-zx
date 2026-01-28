@@ -145,7 +145,7 @@ public class Settings {
     private boolean updateMovesLegacy;
 
     public enum MovesetsMod {
-        UNCHANGED, RANDOM_PREFER_SAME_TYPE, COMPLETELY_RANDOM, METRONOME_ONLY
+        UNCHANGED, RANDOM_PREFER_SAME_TYPE, COMPLETELY_RANDOM, METRONOME_ONLY, GAME_BREAKING_ONLY
     }
 
     private MovesetsMod movesetsMod = MovesetsMod.UNCHANGED;
@@ -396,8 +396,8 @@ public class Settings {
         // 11 movesets
         out.write(makeByteSelected(movesetsMod == MovesetsMod.COMPLETELY_RANDOM,
                 movesetsMod == MovesetsMod.RANDOM_PREFER_SAME_TYPE, movesetsMod == MovesetsMod.UNCHANGED,
-                movesetsMod == MovesetsMod.METRONOME_ONLY, startWithGuaranteedMoves, reorderDamagingMoves)
-                | ((guaranteedMoveCount - 2) << 6));
+                movesetsMod == MovesetsMod.METRONOME_ONLY, movesetsMod == MovesetsMod.GAME_BREAKING_ONLY,
+                startWithGuaranteedMoves, reorderDamagingMoves) | ((guaranteedMoveCount - 2) << 6));
 
         // 12 movesets good damaging
         out.write((movesetsForceGoodDamaging ? 0x80 : 0) | movesetsGoodDamagingPercent);
@@ -663,7 +663,8 @@ public class Settings {
         settings.setMovesetsMod(restoreEnum(MovesetsMod.class, data[11], 2, // UNCHANGED
                 1, // RANDOM_PREFER_SAME_TYPE
                 0, // COMPLETELY_RANDOM
-                3 // METRONOME_ONLY
+                3, // METRONOME_ONLY
+                4 // GAME_BREAKING_ONLY
         ));
         settings.setStartWithGuaranteedMoves(restoreState(data[11], 4));
         settings.setReorderDamagingMoves(restoreState(data[11], 5));
