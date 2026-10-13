@@ -421,79 +421,100 @@ public abstract class AbstractRomHandler implements RomHandler {
         boolean dualTypeOnly = settings.isDualTypeOnly();
 
         List<Pokemon> allPokes = this.getPokemonInclFormes();
-        if (evolutionSanity) {
-            // Type randomization with evolution sanity
-            copyUpEvolutionsHelper(pk -> {
-                // Step 1: Basic or Excluded From Copying Pokemon
-                // A Basic/EFC pokemon has a 35% chance of a second type if
-                // it has an evolution that copies type/stats, a 50% chance
-                // otherwise
-                pk.primaryType = randomType();
-                pk.secondaryType = null;
-                if (pk.evolutionsFrom.size() == 1 && pk.evolutionsFrom.get(0).carryStats) {
-                    if (AbstractRomHandler.this.random.nextDouble() < 0.35 || dualTypeOnly) {
-                        pk.secondaryType = randomType();
-                        while (pk.secondaryType == pk.primaryType) {
-                            pk.secondaryType = randomType();
-                        }
-                    }
-                } else {
-                    if (AbstractRomHandler.this.random.nextDouble() < 0.5 || dualTypeOnly) {
-                        pk.secondaryType = randomType();
-                        while (pk.secondaryType == pk.primaryType) {
-                            pk.secondaryType = randomType();
-                        }
-                    }
-                }
-            }, (evFrom, evTo, toMonIsFinalEvo) -> {
-                evTo.primaryType = evFrom.primaryType;
-                evTo.secondaryType = evFrom.secondaryType;
+        if (settings.getTypesMod() == Settings.TypesMod.SHUFFLE_TYPES) {
+            List<Type> allTypes = Type.getAllTypes(generationOfPokemon());
+            List<Type> shuffledTypes = new ArrayList<>(allTypes);
+            HashMap<Type, Type> typeMapping = new HashMap<>();
+            Collections.shuffle(shuffledTypes, random);
 
-                if (evTo.secondaryType == null) {
-                    double chance = toMonIsFinalEvo ? 0.25 : 0.15;
-                    if (AbstractRomHandler.this.random.nextDouble() < chance || dualTypeOnly) {
-                        evTo.secondaryType = randomType();
-                        while (evTo.secondaryType == evTo.primaryType) {
-                            evTo.secondaryType = randomType();
-                        }
-                    }
-                }
-            });
-        } else {
-            // Entirely random types
+            // Map the current types to the shuffled types
+            for (int i = 0; i < allTypes.size(); i++) {
+                typeMapping.put(allTypes.get(i), shuffledTypes.get(i));
+            }
             for (Pokemon pkmn : allPokes) {
                 if (pkmn != null) {
-                    pkmn.primaryType = randomType();
-                    pkmn.secondaryType = null;
-                    if (this.random.nextDouble() < 0.5||settings.isDualTypeOnly()) {
-                        pkmn.secondaryType = randomType();
-                        while (pkmn.secondaryType == pkmn.primaryType) {
+                    pkmn.primaryType = typeMapping.get(pkmn.primaryType);
+
+                    if (pkmn.secondaryType != null) {
+                        pkmn.secondaryType = typeMapping.get(pkmn.secondaryType);
+                    }
+                }
+            }
+        } else {
+            if (evolutionSanity) {
+                // Type randomization with evolution sanity
+                copyUpEvolutionsHelper(pk -> {
+                    // Step 1: Basic or Excluded From Copying Pokemon
+                    // A Basic/EFC pokemon has a 35% chance of a second type if
+                    // it has an evolution that copies type/stats, a 50% chance
+                    // otherwise
+                    pk.primaryType = randomType();
+                    pk.secondaryType = null;
+                    if (pk.evolutionsFrom.size() == 1 && pk.evolutionsFrom.get(0).carryStats) {
+                        if (AbstractRomHandler.this.random.nextDouble() < 0.35 || dualTypeOnly) {
+                            pk.secondaryType = randomType();
+                            while (pk.secondaryType == pk.primaryType) {
+                                pk.secondaryType = randomType();
+                            }
+                        }
+                    } else {
+                        if (AbstractRomHandler.this.random.nextDouble() < 0.5 || dualTypeOnly) {
+                            pk.secondaryType = randomType();
+                            while (pk.secondaryType == pk.primaryType) {
+                                pk.secondaryType = randomType();
+                            }
+                        }
+                    }
+                }, (evFrom, evTo, toMonIsFinalEvo) -> {
+                    evTo.primaryType = evFrom.primaryType;
+                    evTo.secondaryType = evFrom.secondaryType;
+
+                    if (evTo.secondaryType == null) {
+                        double chance = toMonIsFinalEvo ? 0.25 : 0.15;
+                        if (AbstractRomHandler.this.random.nextDouble() < chance || dualTypeOnly) {
+                            evTo.secondaryType = randomType();
+                            while (evTo.secondaryType == evTo.primaryType) {
+                                evTo.secondaryType = randomType();
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Entirely random types
+                for (Pokemon pkmn : allPokes) {
+                    if (pkmn != null) {
+                        pkmn.primaryType = randomType();
+                        pkmn.secondaryType = null;
+                        if (this.random.nextDouble() < 0.5 || settings.isDualTypeOnly()) {
                             pkmn.secondaryType = randomType();
+                            while (pkmn.secondaryType == pkmn.primaryType) {
+                                pkmn.secondaryType = randomType();
+                            }
                         }
                     }
                 }
             }
-        }
 
-        for (Pokemon pk : allPokes) {
-            if (pk != null && pk.actuallyCosmetic) {
-                pk.primaryType = pk.baseForme.primaryType;
-                pk.secondaryType = pk.baseForme.secondaryType;
+            for (Pokemon pk : allPokes) {
+                if (pk != null && pk.actuallyCosmetic) {
+                    pk.primaryType = pk.baseForme.primaryType;
+                    pk.secondaryType = pk.baseForme.secondaryType;
+                }
             }
-        }
 
-        if (megaEvolutionSanity) {
-            List<MegaEvolution> allMegaEvos = getMegaEvolutions();
-            for (MegaEvolution megaEvo: allMegaEvos) {
-                if (megaEvo.from.megaEvolutionsFrom.size() > 1) continue;
-                megaEvo.to.primaryType = megaEvo.from.primaryType;
-                megaEvo.to.secondaryType = megaEvo.from.secondaryType;
+            if (megaEvolutionSanity) {
+                List<MegaEvolution> allMegaEvos = getMegaEvolutions();
+                for (MegaEvolution megaEvo : allMegaEvos) {
+                    if (megaEvo.from.megaEvolutionsFrom.size() > 1) continue;
+                    megaEvo.to.primaryType = megaEvo.from.primaryType;
+                    megaEvo.to.secondaryType = megaEvo.from.secondaryType;
 
-                if (megaEvo.to.secondaryType == null) {
-                    if (this.random.nextDouble() < 0.25) {
-                        megaEvo.to.secondaryType = randomType();
-                        while (megaEvo.to.secondaryType == megaEvo.to.primaryType) {
+                    if (megaEvo.to.secondaryType == null) {
+                        if (this.random.nextDouble() < 0.25) {
                             megaEvo.to.secondaryType = randomType();
+                            while (megaEvo.to.secondaryType == megaEvo.to.primaryType) {
+                                megaEvo.to.secondaryType = randomType();
+                            }
                         }
                     }
                 }
